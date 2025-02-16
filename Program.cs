@@ -1,11 +1,11 @@
 ﻿using iText.Bouncycastle.X509;
 using iText.Bouncycastle.Crypto;
 using iText.Commons.Bouncycastle.Cert;
-using iText.Kernel.Crypto;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.X509;
 using iText.Kernel.Pdf;
 using iText.Signatures;
+using Org.BouncyCastle.Ocsp;
 using Org.BouncyCastle.Pkcs;
 
 class Program
@@ -44,13 +44,15 @@ class Program
         using PdfReader reader = new PdfReader(sourcePdf);
         PdfSigner signer = new PdfSigner(reader, new FileStream(signedPdf, FileMode.Create), new StampingProperties());
         {
-            IExternalSignature pks = new PrivateKeySignature(new PrivateKeyBC(pk), DigestAlgorithms.SHA256);
+            IExternalSignature pks = new PrivateKeySignature(pk, DigestAlgorithms.SHA256);
             var tsaClient = new TSAClientBouncyCastle("http://timestamp.digicert.com");
-            var ocspClient = new OcspClientBouncyCastle();
+            //var certificateVerifier = new RootStoreVerifier();
+            OCSPVerifier ocspVerifier = new OCSPVerifier(null, null);
+            var ocspClient = new OcspClientBouncyCastle(ocspVerifier);
             var crlClients = new List<ICrlClient>();
             crlClients.Add(new CrlClientOnline());
 
-            signer.SignDetached(pks, certificateWrappers, crlClients, ocspClient, tsaClient, 0, PdfSigner.CryptoStandard.CMS);
+            signer.SignDetached(pks, chain, crlClients, ocspClient, tsaClient, 0, PdfSigner.CryptoStandard.CMS);
         }
 
         Console.WriteLine("PDF signed successfully.");

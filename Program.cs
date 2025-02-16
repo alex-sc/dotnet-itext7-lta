@@ -45,8 +45,12 @@ class Program
         PdfSigner signer = new PdfSigner(reader, new FileStream(signedPdf, FileMode.Create), new StampingProperties());
         {
             IExternalSignature pks = new PrivateKeySignature(new PrivateKeyBC(pk), DigestAlgorithms.SHA256);
+            var tsaClient = new TSAClientBouncyCastle("http://timestamp.digicert.com");
+            var ocspClient = new OcspClientBouncyCastle();
+            var crlClients = new List<ICrlClient>();
+            crlClients.Add(new CrlClientOnline());
 
-            signer.SignDetached(pks, certificateWrappers, null, null, null, 0, PdfSigner.CryptoStandard.CMS);
+            signer.SignDetached(pks, certificateWrappers, crlClients, ocspClient, tsaClient, 0, PdfSigner.CryptoStandard.CMS);
         }
 
         Console.WriteLine("PDF signed successfully.");
